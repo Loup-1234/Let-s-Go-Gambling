@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
                     numberOfDice = Random.nextInt(1, 10)
                     numberOfSides = Random.nextInt(2, 100)
                     diceResults = rollDice(numberOfDice, numberOfSides)
+                    randomSentences =  randomSentence()
                 }
 
                 lifecycle.addObserver(shakeDetector)
