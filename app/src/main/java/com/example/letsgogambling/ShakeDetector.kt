@@ -14,6 +14,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlin.math.abs
 
+@Suppress("DEPRECATION")
 class ShakeDetector(
     context: Context,
     private val onShake: () -> Unit
