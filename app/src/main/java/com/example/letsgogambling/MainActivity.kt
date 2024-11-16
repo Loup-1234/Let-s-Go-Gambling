@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.letsgogambling.ui.theme.LetsGoGamblingTheme
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             LetsGoGamblingTheme {
                 var diceResults by remember { mutableStateOf(emptyList<Int>()) } // State variable holding the results of the dice rolls, initially empty.
+                var randomSentences by remember { mutableStateOf(" ") } // State variable for a sentence, initially empty.
                 var numberOfDice by remember { mutableIntStateOf(9) } // State variable for the number of dice, initially 10.
                 var numberOfSides by remember { mutableIntStateOf(11) }  // State variable for the number of sides on each die, initially 6.
 
@@ -62,11 +64,11 @@ class MainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     )  {
-                        DiceRollResults(results = diceResults)
+                        DiceRollResults(results = diceResults, sentence = randomSentences)
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(text = "Number Of Dice : $numberOfDice")
+                        Text(text = "Number Of Dice : $numberOfDice", textAlign = TextAlign.Center)
 
                         Slider(
                             value = numberOfDice.toFloat(),
@@ -77,7 +79,7 @@ class MainActivity : ComponentActivity() {
                                 .padding(horizontal = 16.dp)
                         )
 
-                        Text(text = "Number Of Sides : $numberOfSides")
+                        Text(text = "Number Of Sides : $numberOfSides", textAlign = TextAlign.Center)
 
 
                         Slider(
@@ -164,7 +166,11 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Button(onClick = { diceResults = rollDice(numberOfDice, numberOfSides) }) {
+                        Button(
+                            onClick = {
+                                diceResults = rollDice(numberOfDice, numberOfSides)
+                                randomSentences =  randomSentence()
+                            }) {
                             Text("Roll The Dice")
                         }
                     }
@@ -182,8 +188,29 @@ fun rollDice(numberOfDice: Int, numberOfSides: Int): List<Int> {
     }
 }
 
+fun randomSentence(): String {
+    val hehehe = listOf(
+        "Shit yourself",
+        "That's a lot of copium right here",
+        "Going to 1v1 God in a fight",
+        "Nah I'd win",
+        "Is this a gun in your pocket or are you just happy to see me ?",
+        "If you're reading this, then I know your IP",
+        "If you're reading this, you're a virgin"
+    )
+
+    val i = Random.nextInt(1, hehehe.size)
+
+    return hehehe[i]
+}
+
 @Composable
-fun DiceRollResults(results: List<Int>) {
+fun DiceRollResults(results: List<Int>, sentence: String) {
     val formattedValues = results.joinToString(", ")
-    Text(text = formattedValues, fontSize = 24.sp)
+
+    Text(text = sentence, fontSize = 24.sp, textAlign = TextAlign.Center)
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Text(text = formattedValues, fontSize = 24.sp, textAlign = TextAlign.Center)
 }
