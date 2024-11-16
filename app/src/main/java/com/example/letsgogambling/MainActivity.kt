@@ -102,7 +102,7 @@ class MainActivity : ComponentActivity() {
                                 Image(
                                     painter = painterResource(id = R.drawable.dice_d4),
                                     contentDescription = "dice_d4",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
+                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                                 )
                             }
 
@@ -113,7 +113,7 @@ class MainActivity : ComponentActivity() {
                                 Image(
                                     painter = painterResource(id = R.drawable.dice_d6),
                                     contentDescription = "dice_d6",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
+                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                                 )
                             }
 
@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
                                 Image(
                                     painter = painterResource(id = R.drawable.dice_d8),
                                     contentDescription = "dice_d8",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
+                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                                 )
                             }
 
@@ -135,7 +135,7 @@ class MainActivity : ComponentActivity() {
                                 Image(
                                     painter = painterResource(id = R.drawable.dice_d10),
                                     contentDescription = "dice_d10",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
+                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                                 )
                             }
 
@@ -146,7 +146,7 @@ class MainActivity : ComponentActivity() {
                                 Image(
                                     painter = painterResource(id = R.drawable.dice_d12),
                                     contentDescription = "dice_d12",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
+                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                                 )
                             }
 
@@ -157,7 +157,7 @@ class MainActivity : ComponentActivity() {
                                 Image(
                                     painter = painterResource(id = R.drawable.dice_d20),
                                     contentDescription = "dice_d20",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer)
+                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                                 )
                             }
                         }
