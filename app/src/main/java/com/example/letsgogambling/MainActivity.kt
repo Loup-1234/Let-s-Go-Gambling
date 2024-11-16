@@ -43,8 +43,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             LetsGoGamblingTheme {
                 var diceResults by remember { mutableStateOf(emptyList<Int>()) } // State variable holding the results of the dice rolls, initially empty.
-                var numberOfDice by remember { mutableIntStateOf(10) } // State variable for the number of dice, initially 10.
-                var numberOfSides by remember { mutableIntStateOf(6) }  // State variable for the number of sides on each die, initially 6.
+                var numberOfDice by remember { mutableIntStateOf(9) } // State variable for the number of dice, initially 10.
+                var numberOfSides by remember { mutableIntStateOf(11) }  // State variable for the number of sides on each die, initially 6.
 
                 shakeDetector = ShakeDetector(this) {
                     numberOfDice = Random.nextInt(1, 10)
