@@ -28,17 +28,26 @@ import com.example.letsgogambling.ui.theme.LetsGoGamblingTheme
 import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
+    private lateinit var shakeDetector: ShakeDetector
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             LetsGoGamblingTheme {
                 var diceResults by remember { mutableStateOf(emptyList<Int>()) } // State variable holding the results of the dice rolls, initially empty.
+                var numberOfDice by remember { mutableIntStateOf(10) } // State variable for the number of dice, initially 10.
+                var numberOfSides by remember { mutableIntStateOf(6) }  // State variable for the number of sides on each die, initially 6.
+
+                shakeDetector = ShakeDetector(this) {
+                    numberOfDice = Random.nextInt(1, 10)
+                    numberOfSides = Random.nextInt(2, 100)
+                    diceResults = rollDice(numberOfDice, numberOfSides)
+                }
+
+                lifecycle.addObserver(shakeDetector)
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    var numberOfDice by remember { mutableIntStateOf(10) } // State variable for the number of dice, initially 10.
-                    var numberOfSides by remember { mutableIntStateOf(6) }  // State variable for the number of sides on each die, initially 6.
-
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
