@@ -218,7 +218,7 @@ fun LandscapeLayout(
 
         Spacer(modifier = Modifier.width(DEFAULT_SPACING_DP))
 
-        Text("Random on shake")
+        Text("Random dices")
 
         Switch(
             checked = isRandomDiceEnabled,
