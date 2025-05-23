@@ -170,8 +170,6 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
-
                         if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
                             LandscapeLayout(
                                 onRollDice = { performRoll() },
@@ -246,6 +244,8 @@ fun PortraitLayout(
     isRandomSentenceEnabled: Boolean,
     onRandomSentenceChanged: (Boolean) -> Unit
 ) {
+    Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
+
     Button(
         onClick = onRollDice
     ) {
