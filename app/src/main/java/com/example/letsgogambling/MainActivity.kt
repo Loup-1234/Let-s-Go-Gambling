@@ -18,12 +18,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,21 +39,43 @@ import kotlin.random.Random
 class MainActivity : ComponentActivity() {
     private lateinit var shakeDetector: ShakeDetector
 
+    companion object {
+        const val MIN_DICE_COUNT = 1
+        const val MAX_DICE_COUNT = 10
+
+        const val MIN_SIDES_COUNT = 2
+        const val MAX_SIDES_COUNT = 100
+
+        val DEFAULT_SPACING_DP = 16.dp
+        val DEFAULT_PADDING_DP = 8.dp
+        val SLIDER_PADDING_DP = 16.dp
+        val TEXT_SIZE_SP = 24.sp
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             LetsGoGamblingTheme {
-                var diceResults by remember { mutableStateOf(emptyList<Int>()) } // State variable holding the results of the dice rolls, initially empty.
-                var randomSentences by remember { mutableStateOf(" ") } // State variable for a sentence, initially empty.
-                var numberOfDice by remember { mutableIntStateOf(9) } // State variable for the number of dice, initially 10.
-                var numberOfSides by remember { mutableIntStateOf(11) }  // State variable for the number of sides on each die, initially 6.
+                var diceResults by rememberSaveable { mutableStateOf(emptyList<Int>()) }
+                var randomSentenceText by rememberSaveable { mutableStateOf("") }
+                var numberOfDice by rememberSaveable { mutableIntStateOf(1) }
+                var numberOfSides by rememberSaveable { mutableIntStateOf(20) }
+                var isRandomOnShakeEnabled by rememberSaveable { mutableStateOf(false) }
+                var isRandomSentenceEnabled by rememberSaveable { mutableStateOf(false) }
+
+                val formattedValues = diceResults.joinToString(", ")
+                val randomSentenceGenerator = remember { RandomSentenceGenerator() }
 
                 shakeDetector = ShakeDetector(this) {
-                    numberOfDice = Random.nextInt(1, 10)
-                    numberOfSides = Random.nextInt(2, 100)
+                    if (isRandomOnShakeEnabled) {
+                        numberOfDice = Random.nextInt(MIN_DICE_COUNT, MAX_DICE_COUNT + 1)
+                        numberOfSides = Random.nextInt(MIN_SIDES_COUNT, MAX_SIDES_COUNT + 1)
+                    }
                     diceResults = rollDice(numberOfDice, numberOfSides)
-                    randomSentences =  randomSentence()
+                    randomSentenceText = if (isRandomSentenceEnabled) {
+                        randomSentenceGenerator.generate()
+                    } else ""
                 }
 
                 lifecycle.addObserver(shakeDetector)
@@ -64,20 +87,31 @@ class MainActivity : ComponentActivity() {
                             .padding(innerPadding),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
-                    )  {
-                        DiceRollResults(results = diceResults, sentence = randomSentences)
+                    ) {
+                        Text(
+                            text = randomSentenceText,
+                            fontSize = TEXT_SIZE_SP,
+                            textAlign = TextAlign.Center
+                        )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
+
+                        Text(
+                            text = formattedValues,
+                            fontSize = TEXT_SIZE_SP,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
 
                         Text(text = "Number Of Dice : $numberOfDice", textAlign = TextAlign.Center)
 
                         Slider(
                             value = numberOfDice.toFloat(),
                             onValueChange = { numberOfDice = it.toInt() },
-                            valueRange = 1f..10f,
-                            steps = 8,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
+                            valueRange = MIN_DICE_COUNT.toFloat()..MAX_DICE_COUNT.toFloat(),
+                            steps = MAX_DICE_COUNT - MIN_DICE_COUNT - 1,
+                            modifier = Modifier.padding(horizontal = SLIDER_PADDING_DP)
                         )
 
                         Text(text = "Number Of Sides : $numberOfSides", textAlign = TextAlign.Center)
@@ -86,93 +120,73 @@ class MainActivity : ComponentActivity() {
                         Slider(
                             value = numberOfSides.toFloat(),
                             onValueChange = { numberOfSides = it.toInt() },
-                            valueRange = 2f..100f,
-                            steps = 97,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
+                            valueRange = MIN_SIDES_COUNT.toFloat()..MAX_SIDES_COUNT.toFloat(),
+                            steps = MAX_SIDES_COUNT - MIN_SIDES_COUNT - 1,
+                            modifier = Modifier.padding(horizontal = SLIDER_PADDING_DP)
                         )
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            horizontalArrangement = Arrangement.Center,
                             modifier = Modifier
                                 .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = DEFAULT_PADDING_DP)
                         ){
-                            Button(
-                                onClick = { numberOfSides = 4},
-                                modifier = Modifier.padding(16.dp,0.dp,8.dp,0.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.dice_d4),
-                                    contentDescription = "dice_d4",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
+                            val diceButtons = remember {
+                                listOf(
+                                    DiceButtonConfig(4, R.drawable.dice_d4, "dice_d4"),
+                                    DiceButtonConfig(6, R.drawable.dice_d6, "dice_d6"),
+                                    DiceButtonConfig(8, R.drawable.dice_d8, "dice_d8"),
+                                    DiceButtonConfig(10, R.drawable.dice_d10, "dice_d10"),
+                                    DiceButtonConfig(12, R.drawable.dice_d12, "dice_d12"),
+                                    DiceButtonConfig(20, R.drawable.dice_d20, "dice_d20")
                                 )
                             }
 
-                            Button(
-                                onClick = { numberOfSides = 6},
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.dice_d6),
-                                    contentDescription = "dice_d6",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
-                                )
-                            }
-
-                            Button(
-                                onClick = { numberOfSides = 8},
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.dice_d8),
-                                    contentDescription = "dice_d8",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
-                                )
-                            }
-
-                            Button(
-                                onClick = { numberOfSides = 10},
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.dice_d10),
-                                    contentDescription = "dice_d10",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
-                                )
-                            }
-
-                            Button(
-                                onClick = { numberOfSides = 12},
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.dice_d12),
-                                    contentDescription = "dice_d12",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
-                                )
-                            }
-
-                            Button(
-                                onClick = { numberOfSides = 20},
-                                modifier = Modifier.padding(8.dp,0.dp,16.dp,0.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.dice_d20),
-                                    contentDescription = "dice_d20",
-                                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
-                                )
+                            diceButtons.forEach { config ->
+                                Button(
+                                    onClick = { numberOfSides = config.sides },
+                                    modifier = Modifier.padding(horizontal = DEFAULT_PADDING_DP)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = config.imageResId),
+                                        contentDescription = config.contentDescription,
+                                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
+                                    )
+                                }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
 
                         Button(
                             onClick = {
                                 diceResults = rollDice(numberOfDice, numberOfSides)
-                                randomSentences =  randomSentence()
+                                randomSentenceText = if (isRandomSentenceEnabled) {
+                                    randomSentenceGenerator.generate()
+                                } else ""
                             }) {
                             Text("Roll The Dice")
+                        }
+
+                        Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Random on shake")
+                            Switch(
+                                checked = isRandomOnShakeEnabled,
+                                onCheckedChange = { isRandomOnShakeEnabled = it },
+                                modifier = Modifier.padding(start = DEFAULT_PADDING_DP)
+                            )
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Random sentences")
+                            Switch(
+                                checked = isRandomSentenceEnabled,
+                                onCheckedChange = { isRandomSentenceEnabled = it },
+                                modifier = Modifier.padding(start = DEFAULT_PADDING_DP)
+                            )
                         }
                     }
                 }
@@ -181,16 +195,25 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun rollDice(numberOfDice: Int, numberOfSides: Int): List<Int> {
-    return try {
-        List(numberOfDice) { Random.nextInt(1, numberOfSides + 1) }
-    } catch (e: IllegalArgumentException) {
+private fun rollDice(numberOfDice: Int, numberOfSides: Int): List<Int> {
+    val validNumberOfDice = numberOfDice.coerceIn(MainActivity.MIN_DICE_COUNT, MainActivity.MAX_DICE_COUNT)
+    val validNumberOfSides = numberOfSides.coerceAtLeast(MainActivity.MIN_SIDES_COUNT)
+
+    return if (validNumberOfSides < 1) {
         emptyList()
+    } else {
+        List(validNumberOfDice) { Random.nextInt(1, validNumberOfSides + 1) }
     }
 }
 
-fun randomSentence(): String {
-    val hehehe = listOf(
+data class DiceButtonConfig(
+    val sides: Int,
+    val imageResId: Int,
+    val contentDescription: String
+)
+
+class RandomSentenceGenerator {
+    private val sentences = listOf(
         "Shit yourself",
         "That's a lot of copium right here",
         "Going to 1v1 God in a fight",
@@ -199,19 +222,5 @@ fun randomSentence(): String {
         "If you're reading this, then I know your IP",
         "If you're reading this, you're a virgin"
     )
-
-    val i = Random.nextInt(1, hehehe.size)
-
-    return hehehe[i]
-}
-
-@Composable
-fun DiceRollResults(results: List<Int>, sentence: String) {
-    val formattedValues = results.joinToString(", ")
-
-    Text(text = sentence, fontSize = 24.sp, textAlign = TextAlign.Center)
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    Text(text = formattedValues, fontSize = 24.sp, textAlign = TextAlign.Center)
+    fun generate(): String = sentences.random()
 }

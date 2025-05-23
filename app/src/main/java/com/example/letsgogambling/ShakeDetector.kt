@@ -8,10 +8,15 @@ import android.hardware.SensorManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @Suppress("DEPRECATION")
@@ -19,71 +24,85 @@ class ShakeDetector(
     context: Context,
     private val onShake: () -> Unit
 ) : SensorEventListener, LifecycleEventObserver {
-
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-    private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
-    private var lastUpdate: Long = 0
     private var lastX = 0f
     private var lastY = 0f
     private var lastZ = 0f
 
-    private val shakeThreshold = 1500 // Adjust this value to control shake sensitivity
+    private var lastShakeTime = 0L
+    private val shakeThreshold = 15f
+    private val shakeCooldown = 1200L
+    private var isVibrating = false
 
-    private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    private val scope = CoroutineScope(Dispatchers.Default + Job())
 
-    init {
-        registerListener()
-    }
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) { }
 
-    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
-        // Not used
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onSensorChanged(event: SensorEvent) {
-        if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
-            val curTime = System.currentTimeMillis()
+        if (event.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastShakeTime < shakeCooldown) return
 
-            if (curTime - lastUpdate > 100) {
-                val diffTime = curTime - lastUpdate
-                lastUpdate = curTime
+        val (x, y, z) = event.values
 
-                val x = event.values[0]
-                val y = event.values[1]
-                val z = event.values[2]
+        val deltaX = abs(x - lastX)
+        val deltaY = abs(y - lastY)
+        val deltaZ = abs(z - lastZ)
+        if (deltaX > shakeThreshold || deltaY > shakeThreshold || deltaZ > shakeThreshold) {
+            handleShake(currentTime)
+        }
 
-                val speed = abs(x + y + z - lastX - lastY - lastZ) / diffTime * 10000
+        lastX = x
+        lastY = y
+        lastZ = z
+    }
 
-                if (speed > shakeThreshold) {
-                    onShake()
-                }
+    private fun handleShake(currentTime: Long) {
+        onShake()
+        lastShakeTime = currentTime
+        vibrateDevice()
+    }
 
-                lastX = x
-                lastY = y
-                lastZ = z
-
-                if (speed > shakeThreshold) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
-                    onShake()
-                }
+    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+        when (event) {
+            Lifecycle.Event.ON_RESUME -> registerListener()
+            Lifecycle.Event.ON_PAUSE -> unregisterListener()
+            Lifecycle.Event.ON_DESTROY -> {
+                unregisterListener()
+                scope.cancel()
             }
+            else -> { }
         }
     }
 
     private fun registerListener() {
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        accelerometer?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+        }
     }
 
     private fun unregisterListener() {
         sensorManager.unregisterListener(this)
     }
 
-    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-        if (event == Lifecycle.Event.ON_RESUME) {
-            registerListener()
-        } else if (event == Lifecycle.Event.ON_PAUSE) {
-            unregisterListener()
+    private fun vibrateDevice() {
+        if (isVibrating) return
+
+        isVibrating = true
+        scope.launch {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    vibrator.vibrate(200)
+                }
+                delay(200)
+            } finally {
+                isVibrating = false
+            }
         }
     }
 }
