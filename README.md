@@ -3,4 +3,5 @@
 - [x] It can roll dice
 - [x] It have a nice UI
 
-![Screenshot of the app.](https://raw.githubusercontent.com/Loup-1234/Let-s-Go-Gambling/refs/heads/main/Screenshot/Screenshot_20241116_153139.png)
+![Screenshot_20250523_212915](https://github.com/user-attachments/assets/b9be8382-b639-49b3-af29-38f2165e5c1f)
+![Screenshot_20250523_212930](https://github.com/user-attachments/assets/2a4d8b69-cf8a-437e-a31c-bcc4c3a5e52d)
