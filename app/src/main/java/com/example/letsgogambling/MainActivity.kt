@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -29,10 +31,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.letsgogambling.MainActivity.Companion.DEFAULT_PADDING_DP
+import com.example.letsgogambling.MainActivity.Companion.DEFAULT_SPACING_DP
 import com.example.letsgogambling.ui.theme.LetsGoGamblingTheme
 import kotlin.random.Random
 
@@ -48,7 +53,6 @@ class MainActivity : ComponentActivity() {
 
         val DEFAULT_SPACING_DP = 16.dp
         val DEFAULT_PADDING_DP = 8.dp
-        val SLIDER_PADDING_DP = 16.dp
         val TEXT_SIZE_SP = 24.sp
     }
 
@@ -58,24 +62,28 @@ class MainActivity : ComponentActivity() {
         setContent {
             LetsGoGamblingTheme {
                 var diceResults by rememberSaveable { mutableStateOf(emptyList<Int>()) }
-                var randomSentenceText by rememberSaveable { mutableStateOf("") }
+                var randomSentenceText by rememberSaveable { mutableStateOf<String?>(null) }
                 var numberOfDice by rememberSaveable { mutableIntStateOf(1) }
                 var numberOfSides by rememberSaveable { mutableIntStateOf(20) }
-                var isRandomOnShakeEnabled by rememberSaveable { mutableStateOf(false) }
+                var isRandomDiceEnabled by rememberSaveable { mutableStateOf(false) }
                 var isRandomSentenceEnabled by rememberSaveable { mutableStateOf(false) }
 
                 val formattedValues = diceResults.joinToString(", ")
                 val randomSentenceGenerator = remember { RandomSentenceGenerator() }
+                val configuration = LocalConfiguration.current
 
-                shakeDetector = ShakeDetector(this) {
-                    if (isRandomOnShakeEnabled) {
+                fun performRoll() {
+                    if (isRandomDiceEnabled) {
                         numberOfDice = Random.nextInt(MIN_DICE_COUNT, MAX_DICE_COUNT + 1)
                         numberOfSides = Random.nextInt(MIN_SIDES_COUNT, MAX_SIDES_COUNT + 1)
                     }
                     diceResults = rollDice(numberOfDice, numberOfSides)
-                    randomSentenceText = if (isRandomSentenceEnabled) {
-                        randomSentenceGenerator.generate()
-                    } else ""
+                    randomSentenceText =
+                        if (isRandomSentenceEnabled) randomSentenceGenerator.generate() else null
+                }
+
+                shakeDetector = ShakeDetector(this) {
+                    performRoll()
                 }
 
                 lifecycle.addObserver(shakeDetector)
@@ -88,11 +96,13 @@ class MainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text(
-                            text = randomSentenceText,
-                            fontSize = TEXT_SIZE_SP,
-                            textAlign = TextAlign.Center
-                        )
+                        randomSentenceText?.let {
+                            Text(
+                                text = it,
+                                fontSize = TEXT_SIZE_SP,
+                                textAlign = TextAlign.Center
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
 
@@ -111,18 +121,21 @@ class MainActivity : ComponentActivity() {
                             onValueChange = { numberOfDice = it.toInt() },
                             valueRange = MIN_DICE_COUNT.toFloat()..MAX_DICE_COUNT.toFloat(),
                             steps = MAX_DICE_COUNT - MIN_DICE_COUNT - 1,
-                            modifier = Modifier.padding(horizontal = SLIDER_PADDING_DP)
+                            modifier = Modifier.padding(
+                                horizontal = if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) 64.dp else 16.dp
+                            )
                         )
 
                         Text(text = "Number Of Sides : $numberOfSides", textAlign = TextAlign.Center)
-
 
                         Slider(
                             value = numberOfSides.toFloat(),
                             onValueChange = { numberOfSides = it.toInt() },
                             valueRange = MIN_SIDES_COUNT.toFloat()..MAX_SIDES_COUNT.toFloat(),
                             steps = MAX_SIDES_COUNT - MIN_SIDES_COUNT - 1,
-                            modifier = Modifier.padding(horizontal = SLIDER_PADDING_DP)
+                            modifier = Modifier.padding(
+                                horizontal = if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) 64.dp else 16.dp
+                            )
                         )
 
                         Row(
@@ -131,7 +144,7 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .horizontalScroll(rememberScrollState())
                                 .padding(horizontal = DEFAULT_PADDING_DP)
-                        ){
+                        ) {
                             val diceButtons = remember {
                                 listOf(
                                     DiceButtonConfig(4, R.drawable.dice_d4, "dice_d4"),
@@ -159,33 +172,21 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
 
-                        Button(
-                            onClick = {
-                                diceResults = rollDice(numberOfDice, numberOfSides)
-                                randomSentenceText = if (isRandomSentenceEnabled) {
-                                    randomSentenceGenerator.generate()
-                                } else ""
-                            }) {
-                            Text("Roll The Dice")
-                        }
-
-                        Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Random on shake")
-                            Switch(
-                                checked = isRandomOnShakeEnabled,
-                                onCheckedChange = { isRandomOnShakeEnabled = it },
-                                modifier = Modifier.padding(start = DEFAULT_PADDING_DP)
+                        if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+                            LandscapeLayout(
+                                onRollDice = { performRoll() },
+                                isRandomDiceEnabled = isRandomDiceEnabled,
+                                onRandomDiceChanged = { isRandomDiceEnabled = it },
+                                isRandomSentenceEnabled = isRandomSentenceEnabled,
+                                onRandomSentenceChanged = { isRandomSentenceEnabled = it }
                             )
-                        }
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Random sentences")
-                            Switch(
-                                checked = isRandomSentenceEnabled,
-                                onCheckedChange = { isRandomSentenceEnabled = it },
-                                modifier = Modifier.padding(start = DEFAULT_PADDING_DP)
+                        } else {
+                            PortraitLayout(
+                                onRollDice = { performRoll() },
+                                isRandomDiceEnabled = isRandomDiceEnabled,
+                                onRandomDiceChanged = { isRandomDiceEnabled = it },
+                                isRandomSentenceEnabled = isRandomSentenceEnabled,
+                                onRandomSentenceChanged = { isRandomSentenceEnabled = it }
                             )
                         }
                     }
@@ -195,11 +196,94 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun LandscapeLayout(
+    onRollDice: () -> Unit,
+    isRandomDiceEnabled: Boolean,
+    onRandomDiceChanged: (Boolean) -> Unit,
+    isRandomSentenceEnabled: Boolean,
+    onRandomSentenceChanged: (Boolean) -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Button(
+            onClick = onRollDice,
+            modifier = Modifier.padding(end = DEFAULT_PADDING_DP)
+        ) {
+            Text("Roll dices")
+        }
+
+        Spacer(modifier = Modifier.width(DEFAULT_SPACING_DP))
+
+        Text("Random on shake")
+
+        Switch(
+            checked = isRandomDiceEnabled,
+            onCheckedChange = onRandomDiceChanged,
+            modifier = Modifier.padding(start = DEFAULT_PADDING_DP, end = DEFAULT_PADDING_DP)
+        )
+
+        Spacer(modifier = Modifier.width(DEFAULT_SPACING_DP))
+
+        Text("Random sentences")
+
+        Switch(
+            checked = isRandomSentenceEnabled,
+            onCheckedChange = onRandomSentenceChanged,
+            modifier = Modifier.padding(start = DEFAULT_PADDING_DP)
+        )
+    }
+}
+
+@Composable
+fun PortraitLayout(
+    onRollDice: () -> Unit,
+    isRandomDiceEnabled: Boolean,
+    onRandomDiceChanged: (Boolean) -> Unit,
+    isRandomSentenceEnabled: Boolean,
+    onRandomSentenceChanged: (Boolean) -> Unit
+) {
+    Button(
+        onClick = onRollDice
+    ) {
+        Text("Roll The Dice")
+    }
+
+    Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Random dices")
+        Switch(
+            checked = isRandomDiceEnabled,
+            onCheckedChange = onRandomDiceChanged,
+            modifier = Modifier.padding(start = DEFAULT_PADDING_DP)
+        )
+    }
+
+    Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP - 4.dp))
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("Random sentences")
+        Switch(
+            checked = isRandomSentenceEnabled,
+            onCheckedChange = onRandomSentenceChanged,
+            modifier = Modifier.padding(start = DEFAULT_PADDING_DP)
+        )
+    }
+}
+
 private fun rollDice(numberOfDice: Int, numberOfSides: Int): List<Int> {
     val validNumberOfDice = numberOfDice.coerceIn(MainActivity.MIN_DICE_COUNT, MainActivity.MAX_DICE_COUNT)
-    val validNumberOfSides = numberOfSides.coerceAtLeast(MainActivity.MIN_SIDES_COUNT)
+    val validNumberOfSides = numberOfSides.coerceIn(MainActivity.MIN_SIDES_COUNT, MainActivity.MAX_SIDES_COUNT)
 
-    return if (validNumberOfSides < 1) {
+    return if (validNumberOfSides < MainActivity.MIN_SIDES_COUNT) {
         emptyList()
     } else {
         List(validNumberOfDice) { Random.nextInt(1, validNumberOfSides + 1) }
