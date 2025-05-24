@@ -36,30 +36,45 @@ import com.example.letsgogambling.MainActivity.Companion.DEFAULT_PADDING_DP
 import com.example.letsgogambling.MainActivity.Companion.DEFAULT_SPACING_DP
 import com.example.letsgogambling.ui.theme.LetsGoGamblingTheme
 
+// Main activity for the gambling app
 class MainActivity : ComponentActivity() {
+    // Shake detector for rolling dice
     private var shakeDetector: ShakeDetector? = null
+    // View model for dice logic
     private val diceViewModel: DiceViewModel by viewModels()
 
+    // Companion object for constants
     companion object {
+        // Min and max dice count
         const val MIN_DICE_COUNT = 1
         const val MAX_DICE_COUNT = 10
 
+        // Min and max sides count
         const val MIN_SIDES_COUNT = 2
         const val MAX_SIDES_COUNT = 100
 
+        // Default spacing and padding
         val DEFAULT_SPACING_DP = 16.dp
         val DEFAULT_PADDING_DP = 8.dp
+        // Default text size
         val TEXT_SIZE_SP = 24.sp
     }
 
+    // Called when the activity is first created
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Enable edge-to-edge display
         enableEdgeToEdge()
+        // Set the content view
         setContent {
+            // Apply the app theme
             LetsGoGamblingTheme {
+                // Get formatted dice results
                 val formattedValues = diceViewModel.diceResults.joinToString(", ")
+                // Get current configuration
                 val configuration = LocalConfiguration.current
 
+                // Initialize shake detector
                 shakeDetector = shakeDetector ?: ShakeDetector(this) {
                     diceViewModel.performRoll()
                 }
@@ -67,6 +82,7 @@ class MainActivity : ComponentActivity() {
                 shakeDetector?.let { lifecycle.addObserver(it) }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    // Main column layout
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -74,6 +90,7 @@ class MainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
+                        // Display random sentence if available
                         diceViewModel.randomSentenceText?.let { sentence ->
                             if (sentence.isNotEmpty()) {
                                 Text(
@@ -85,6 +102,7 @@ class MainActivity : ComponentActivity() {
                         }
                         Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
 
+                        // Display formatted dice results
                         Text(
                             text = formattedValues,
                             fontSize = TEXT_SIZE_SP,
@@ -93,12 +111,14 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
 
+                        // Display number of dice
                         Text(
                             text = "Number Of Dice : ${diceViewModel.numberOfDice}",
                             textAlign = TextAlign.Center
                         )
 
                         Slider(
+                            // Slider for number of dice
                             value = diceViewModel.numberOfDice.toFloat(),
                             onValueChange = { diceViewModel.numberOfDice = it.toInt() },
                             valueRange = MIN_DICE_COUNT.toFloat()..MAX_DICE_COUNT.toFloat(),
@@ -108,12 +128,14 @@ class MainActivity : ComponentActivity() {
                             )
                         )
 
+                        // Display number of sides
                         Text(
                             text = "Number Of Sides : ${diceViewModel.numberOfSides}",
                             textAlign = TextAlign.Center
                         )
 
                         Slider(
+                            // Slider for number of sides
                             value = diceViewModel.numberOfSides.toFloat(),
                             onValueChange = { diceViewModel.numberOfSides = it.toInt() },
                             valueRange = MIN_SIDES_COUNT.toFloat()..MAX_SIDES_COUNT.toFloat(),
@@ -123,6 +145,7 @@ class MainActivity : ComponentActivity() {
                             )
                         )
 
+                        // Row for dice buttons
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center,
@@ -133,6 +156,7 @@ class MainActivity : ComponentActivity() {
                             DiceButtonsRow(diceViewModel)
                         }
 
+                        // Choose layout based on orientation
                         if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
                             LandscapeLayout(
                                 onRollDice = { diceViewModel.performRoll() },
@@ -157,8 +181,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// Composable for dice buttons row
 @Composable
 fun DiceButtonsRow(diceViewModel: DiceViewModel) {
+    // Remember dice button configurations
     val diceButtons = remember {
         listOf(
             DiceButtonConfig(4, R.drawable.dice_d4, "dice_d4"),
@@ -170,6 +196,7 @@ fun DiceButtonsRow(diceViewModel: DiceViewModel) {
         )
     }
 
+    // Create a button for each dice configuration
     diceButtons.forEach { config ->
         Button(
             onClick = { diceViewModel.numberOfSides = config.sides },
@@ -184,6 +211,7 @@ fun DiceButtonsRow(diceViewModel: DiceViewModel) {
     }
 }
 
+// Composable for landscape layout
 @Composable
 fun LandscapeLayout(
     onRollDice: () -> Unit,
@@ -192,6 +220,7 @@ fun LandscapeLayout(
     isRandomSentenceEnabled: Boolean,
     onRandomSentenceChanged: (Boolean) -> Unit
 ) {
+    // Row for landscape layout
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -226,6 +255,7 @@ fun LandscapeLayout(
     }
 }
 
+// Composable for portrait layout
 @Composable
 fun PortraitLayout(
     onRollDice: () -> Unit,
@@ -236,12 +266,14 @@ fun PortraitLayout(
 ) {
     Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
 
+    // Button to roll the dice
     Button(
         onClick = onRollDice
     ) {
         Text("Roll The Dice")
     }
 
+    // Spacer
     Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP))
 
     Row(
@@ -255,6 +287,7 @@ fun PortraitLayout(
         )
     }
 
+    // Spacer
     Spacer(modifier = Modifier.height(DEFAULT_SPACING_DP - 4.dp))
 
     Row(
