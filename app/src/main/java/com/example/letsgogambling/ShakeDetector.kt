@@ -33,8 +33,8 @@ class ShakeDetector(
     private var lastZ = 0f
 
     private var lastShakeTime = 0L
-    private val shakeThreshold = 15f
-    private val shakeCooldown = 1200L
+    private val shakeThreshold = 12f
+    private val shakeCooldown = 12L
     private var isVibrating = false
 
     private val scope = CoroutineScope(Dispatchers.Default + Job())
